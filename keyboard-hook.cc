@@ -52,8 +52,8 @@ std::string GetKeyName(KBDLLHOOKSTRUCT *keyboardHook)
     }
 
     std::string modifiers = "";
-    modifiers += (GetAsyncKeyState(VK_CONTROL) & 0x8000) ? std::string("Control") : "";
-    modifiers += (GetAsyncKeyState(VK_SHIFT) & 0x8000) ? (!modifiers.empty() ? "+" : "") + std::string("Shift") : "";
+    modifiers += (GetAsyncKeyState(VK_SHIFT) & 0x8000) ? std::string("Shift") : "";
+    modifiers += (GetAsyncKeyState(VK_CONTROL) & 0x8000) ? (!modifiers.empty() ? "+" : "") + std::string("Control") : "";
     modifiers += (GetAsyncKeyState(VK_MENU) & 0x8000) ? (!modifiers.empty() ? "+" : "") + std::string("Alt") : "";
     modifiers += !modifiers.empty() ? "+" : "";
 
