@@ -1,17 +1,21 @@
 # global-mkh
 
-Global mouse events listener for Node.js (Windows only). Based off of [sentialx/mouse-hooks](https://github.com/sentialx/mouse-hooks) and [coldKey1/mouse-hooks](https://github.com/coldKey1/mouse-hooks).
+An event based, Global Keyboard and Mouse listener for Node.js (Windows only). Based off of [xanderfrangos/global-mouse-events](https://github.com/xanderfrangos/global-mouse-events) and [borecjeborec1/lepikEvents](https://github.com/borecjeborec1/lepikEvents).
 
 ## Installation
 
 ```cmd
-npm i global-mkh
+npm i @abberdeen/global-mkh
 ```
 
 ## Usage
 Import the module and register for the mouse events you'd like to listen to.
 
 ### Available event listeners
+
+**`keyup`** / **`keydown`** — *Fires when a keyboard button is pressed / released.*\
+Returns:
+- **keyName:** Return the pressed key, along with the modifiers (control, shift, and alt), separated by a '+'. 
 
 **`mouseup`** / **`mousedown`** — *Fires when a mouse button is pressed / released.*\
 Returns:
@@ -34,23 +38,32 @@ Returns:
 ### Example
 
 ```js
-const mouseEvents = require("global-mkh");
+const globalMKH = require("global-mkh");
 
-mouseEvents.on("mouseup", event => {
-  console.log(event); // { x: 2962, y: 483, button: 1 }
+globalMKH.on("keyup", data => {
+  console.log("keyup: ", data);
 });
 
-mouseEvents.on("mousedown", event => {
-  console.log(event); // { x: 2962, y: 483, button: 1 }
+globalMKH.on("keydown", data => {
+  console.log("keydown", data);
 });
 
-mouseEvents.on("mousemove", event => {
-  console.log(event); // { x: 2962, y: 482 }
+globalMKH.on("mouseup", data => {
+  console.log(data);
 });
 
-mouseEvents.on("mousewheel", event => {
-  console.log(event); // { x: 2962, y: 483, delta: -1, axis: 0 }
+globalMKH.on("mousemove", data => {
+  console.log(data);
 });
+
+globalMKH.on("mousedown", data => {
+  console.log(data);
+});
+
+globalMKH.on("mousewheel", data => {
+  console.log(data);
+});
+
 ```
 
 ### Available functions
