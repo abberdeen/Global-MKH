@@ -46,9 +46,9 @@ void onMainThread(Napi::Env env, Napi::Function function, MouseEventContext *pMo
             // Is not mouse movement
 
             // Determine event type
-            if (wParam == WM_LBUTTONUP || wParam == WM_RBUTTONUP || wParam == WM_MBUTTONUP) {
+            if (wParam == WM_LBUTTONUP || wParam == WM_RBUTTONUP || wParam == WM_MBUTTONUP || WM_XBUTTONUP) {
                 name = "mouseup";
-            } else if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN) {
+            } else if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN || WM_XBUTTONDOWN ) {
                 name = "mousedown";
             } else if (wParam == WM_MOUSEWHEEL || wParam == WM_MOUSEHWHEEL) {
                 name = "mousewheel";
@@ -85,7 +85,7 @@ void onMainThread(Napi::Env env, Napi::Function function, MouseEventContext *pMo
     }
 }
 
-LRESULT CALLBACK HookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK MouseHookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 
     // If not WM_MOUSEMOVE or WM_MOUSEMOVE has been requested, process event
     if(!(wParam == WM_MOUSEMOVE && !captureMouseMove.load())) {
@@ -108,7 +108,7 @@ LRESULT CALLBACK HookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 
 DWORD WINAPI MouseHookThread(LPVOID lpParam) {
     MSG msg;
-    HHOOK hook = installEventHook.load() ? SetWindowsHookEx(WH_MOUSE_LL, HookCallback, NULL, 0) : NULL;
+    HHOOK hook = installEventHook.load() ? SetWindowsHookEx(WH_MOUSE_LL, MouseHookCallback, NULL, 0) : NULL;
 
     while (GetMessage(&msg, NULL, 0, 0) > 0) {
         if (msg.message != WM_USER) continue;
@@ -116,7 +116,7 @@ DWORD WINAPI MouseHookThread(LPVOID lpParam) {
             if (!UnhookWindowsHookEx(hook)) break;
             hook = NULL;
         } else if (installEventHook.load() && hook == NULL) {
-            hook = SetWindowsHookEx(WH_MOUSE_LL, HookCallback, NULL, 0);
+            hook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookCallback, NULL, 0);
             if (hook == NULL) break;
         }
     }
@@ -166,7 +166,7 @@ Napi::Boolean resumeMouseEvents(const Napi::CallbackInfo &info) {
     return Napi::Boolean::New(info.Env(), bDidPost);
 }
 
-Napi::Object Init(Napi::Env env, Napi::Object exports) {
+Napi::Object InitMouse(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "createMouseHook"),
                 Napi::Function::New(env, createMouseHook));
 
@@ -184,5 +184,4 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
     return exports;
 }
-
-NODE_API_MODULE(NODE_GYP_MODULE_NAME, Init)
+ 

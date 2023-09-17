@@ -1,12 +1,12 @@
 {
   "targets": [
     {
-      "target_name": "global_mouse_events",
+      "target_name": "global_mkh",
       "cflags!": [ "-fno-exceptions" ],
       "cflags_cc!": [ "-fno-exceptions" ],
       "conditions": [
         ["OS=='win'", {
-      	  "sources": [ "global-mouse-events.cc" ]
+      	  "sources": [ "init.cc" ]
       	}],
       ],
       "include_dirs": [

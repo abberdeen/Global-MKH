@@ -1,11 +1,11 @@
-# global-mouse-events
+# global-mkh
 
 Global mouse events listener for Node.js (Windows only). Based off of [sentialx/mouse-hooks](https://github.com/sentialx/mouse-hooks) and [coldKey1/mouse-hooks](https://github.com/coldKey1/mouse-hooks).
 
 ## Installation
 
 ```cmd
-npm i global-mouse-events
+npm i global-mkh
 ```
 
 ## Usage
@@ -34,7 +34,7 @@ Returns:
 ### Example
 
 ```js
-const mouseEvents = require("global-mouse-events");
+const mouseEvents = require("global-mkh");
 
 mouseEvents.on("mouseup", event => {
   console.log(event); // { x: 2962, y: 483, button: 1 }

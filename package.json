@@ -1,6 +1,6 @@
 {
-  "name": "global-mouse-events",
-  "version": "1.1.0",
+  "name": "@abberdeen/global-mkh",
+  "version": "1.0.1",
   "description": "Global mouse events listener for Node.js (Windows only)",
   "main": "index.js",
   "scripts": {
@@ -10,24 +10,26 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/xanderfrangos/global-mouse-events.git"
+    "url": "git://github.com/abberdeen/global-mkh.git"
   },
   "keywords": [
     "mouse-hooks",
     "windows",
     "mouse-events",
     "mouse",
+    "keyboard",
+    "electron",
     "windows-hooks",
     "hooks",
     "global",
     "node"
   ],
-  "author": "xanderfrangos",
+  "author": "abberdeen",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/xanderfrangos/global-mouse-events/issues"
+    "url": "https://github.com/abberdeen/global-mkh/issues"
   },
-  "homepage": "https://github.com/xanderfrangos/global-mouse-events#readme",
+  "homepage": "https://github.com/abberdeen/global-mkh#readme",
   "dependencies": {
     "bindings": "1.5.0",
     "node-addon-api": "3.1.0",
@@ -38,7 +40,9 @@
     "index.d.ts",
     "thread.js",
     "binding.gyp",
-    "global-mouse-events.cc",
+    "keyboard-hook.cc",
+    "mouse-hook.cc",
+    "init.cc",
     "LICENSE",
     "example.js",
     "README.md"

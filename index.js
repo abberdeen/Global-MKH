@@ -1,16 +1,20 @@
 "use strict";
+
 const { EventEmitter } = require("events");
-const addon = require("bindings")("global_mouse_events");
+const mouseAddon = require("bindings")("mouse-hook");
+const keyboardAddon = require("bindings")("keyboard-hook");
+
 let paused = true;
 
-class MouseEvents extends EventEmitter {
+class GlobalMKH extends EventEmitter {
     constructor() {
         super();
 
         if (require("os").platform() !== "win32")
             return;
 
-        let createdListener = false;
+        let createdMouseListener = false;
+        let createdKeyboardListener = false;
         let registeredEvents = [];
 
         this.on("newListener", event => {
@@ -18,27 +22,38 @@ class MouseEvents extends EventEmitter {
                 return;
 
             // Enable WM_MOUSEMOVE capture if requested
-            if(event === "mousemove") {
-                addon.enableMouseMove();
+            if (event === "mousemove") {
+                mouseAddon.enableMouseMove();
             }
 
-            if ((event === "mouseup" || event === "mousedown" || event === "mousemove" || event === "mousewheel") && !createdListener) {
+            if ((event === "mouseup" || event === "mousedown" || event === "mousemove" || event === "mousewheel") && !createdMouseListener) {
                 // Careful: this currently "leaks" a thread every time it's called.
                 // We should probably get around to fixing that.
-                createdListener = addon.createMouseHook((event, x, y, button, delta) => {
+                createdMouseListener = mouseAddon.createMouseHook((event, x, y, button, delta) => {
                     const payload = { x, y };
                     if (event === "mousewheel") {
                         payload.delta = FromInt32(delta) / 120;
                         payload.axis = button;
-                    } else if(event === "mousedown" || event === "mouseup") {
+                    } else if (event === "mousedown" || event === "mouseup") {
                         payload.button = button;
                     }
                     this.emit(event, payload);
                 });
-                if (createdListener) {
+                if (createdMouseListener) {
                     this.resumeMouseEvents();
                 }
-            } else {
+            } else if ((event === "keyup" || event === "keydown") && !createdKeyboardListener) {
+                // Careful: this currently "leaks" a thread every time it's called.
+                // We should probably get around to fixing that.
+                createdKeyboardListener = keyboardAddon.createKeyboardHook((event, keyName) => {
+                    const payload = { keyName };
+                    this.emit(event, payload);
+                });
+                if (createdMouseListener) {
+                    this.resumeKeyboardEvents();
+                }
+            }
+            else {
                 return;
             }
 
@@ -51,7 +66,7 @@ class MouseEvents extends EventEmitter {
 
             registeredEvents = registeredEvents.filter(x => x !== event);
             if (event === "mousemove") {
-                addon.disableMouseMove();
+                mouseAddon.disableMouseMove();
             }
         });
     }
@@ -61,15 +76,15 @@ class MouseEvents extends EventEmitter {
     }
 
     pauseMouseEvents() {
-        if(paused) return false;
+        if (paused) return false;
         paused = true;
-        return addon.pauseMouseEvents();
+        return mouseAddon.pauseMouseEvents();
     }
 
     resumeMouseEvents() {
-        if(!paused) return false;
+        if (!paused) return false;
         paused = false;
-        return addon.resumeMouseEvents();
+        return mouseAddon.resumeMouseEvents();
     }
 }
 
@@ -82,4 +97,5 @@ function FromInt32(x) {
     }
 }
 
-module.exports = new MouseEvents();
+
+module.exports = new GlobalMKH();
