@@ -1,11 +1,19 @@
 const mouseEvents = require("./index");
 
+mouseEvents.on("keyup", data => {
+  console.log("keyup: ", data);
+});
+
+mouseEvents.on("keydown", data => {
+  console.log("keydown", data);
+});
+
 mouseEvents.on("mouseup", data => {
   console.log(data);
 });
 
 mouseEvents.on("mousemove", data => {
-  console.log(data);
+  //console.log(data);
 });
 
 mouseEvents.on("mousedown", data => {
@@ -17,13 +25,13 @@ mouseEvents.on("mousewheel", data => {
 });
 
 setInterval(() => {
-  if (!mouseEvents.getPaused()) {
+  if (!mouseEvents.getMousePaused()) {
     console.error("Still listening...");
   }
 }, 5000);
 
 process.on("SIGBREAK", () => {
-  if (mouseEvents.getPaused()) {
+  if (mouseEvents.getMousePaused()) {
     console.error("resuming mouse events");
     mouseEvents.resumeMouseEvents();
   } else {

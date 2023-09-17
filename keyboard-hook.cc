@@ -73,7 +73,7 @@ std::string GetKeyName(KBDLLHOOKSTRUCT *keyboardHook)
 }
 
 void onKeyboardMainThread(Napi::Env env, Napi::Function function, KeyboardEventContext *pKeyboardEvent)
-{
+{ 
     auto nCode = pKeyboardEvent->nCode;
     auto wParam = pKeyboardEvent->wParam;
     auto eventName = pKeyboardEvent->eventName;
@@ -83,57 +83,54 @@ void onKeyboardMainThread(Napi::Env env, Napi::Function function, KeyboardEventC
 
     if (nCode >= 0)
     {
-        // Only proceed if an event was identified
-        if (eventName != "")
-        {
-            Napi::HandleScope scope(env);
+        Napi::HandleScope scope(env);
 
-            auto keyName = Napi::String::New(env, pKeyName);
-
-            // Yell back to NodeJS
-            function.Call(env.Global(),
-                          {Napi::String::New(env, eventName), keyName});
-        }
+        // Yell back to NodeJS
+        function.Call(env.Global(), {Napi::String::New(env, eventName), Napi::String::New(env, pKeyName)});
     }
 }
 
 LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
 {
-    KBDLLHOOKSTRUCT *keyboardHook = (KBDLLHOOKSTRUCT *)lParam;
-
-    if (keyboardHook->vkCode != VK_CONTROL &&
-        keyboardHook->vkCode != VK_SHIFT &&
-        keyboardHook->vkCode != VK_MENU &&
-        keyboardHook->vkCode != VK_LSHIFT &&
-        keyboardHook->vkCode != VK_RSHIFT &&
-        keyboardHook->vkCode != VK_LCONTROL &&
-        keyboardHook->vkCode != VK_RCONTROL &&
-        keyboardHook->vkCode != VK_LMENU &&
-        keyboardHook->vkCode != VK_RMENU)
+    if (nCode == HC_ACTION)
     {
-        std::string eventName = "";
-        if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
-        {
-            eventName = "keydown";
-        }
-        else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
-        {
-            eventName = "keyup";
-        }
+        KBDLLHOOKSTRUCT *keyboardHook = (KBDLLHOOKSTRUCT *)lParam;
 
-        std::string keyName = GetKeyName(keyboardHook);
-        if (!keyName.empty() && !eventName.empty())
+        if (keyboardHook->vkCode != VK_CONTROL &&
+            keyboardHook->vkCode != VK_SHIFT &&
+            keyboardHook->vkCode != VK_MENU &&
+            keyboardHook->vkCode != VK_LSHIFT &&
+            keyboardHook->vkCode != VK_RSHIFT &&
+            keyboardHook->vkCode != VK_LCONTROL &&
+            keyboardHook->vkCode != VK_RCONTROL &&
+            keyboardHook->vkCode != VK_LMENU &&
+            keyboardHook->vkCode != VK_RMENU)
         {
-            auto pKeyboardEvent = new KeyboardEventContext();
-            pKeyboardEvent->nCode = nCode;
-            pKeyboardEvent->wParam = wParam;
-            pKeyboardEvent->eventName = eventName;
+            std::string eventName = "";
+            if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
+            {
+                eventName = "keydown";
+            }
+            else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+            {
+                eventName = "keyup";
+            }
 
-            // Process event on non-blocking thread
-            _tsfnKeyboard.NonBlockingCall(pKeyboardEvent, onKeyboardMainThread);
+            std::string keyName = GetKeyName(keyboardHook);
+
+            if (!keyName.empty() && !eventName.empty())
+            {
+                auto pKeyboardEvent = new KeyboardEventContext();
+                pKeyboardEvent->nCode = nCode;
+                pKeyboardEvent->wParam = wParam;
+                pKeyboardEvent->eventName = eventName;
+                pKeyboardEvent->keyName = keyName;
+
+                // Process event on non-blocking thread
+                _tsfnKeyboard.NonBlockingCall(pKeyboardEvent, onKeyboardMainThread);
+            }
         }
     }
-
     // Let Windows continue with this event as normal
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
@@ -208,6 +205,8 @@ Napi::Object InitKeyboard(Napi::Env env, Napi::Object exports)
     exports.Set(Napi::String::New(env, "createKeyboardHook"),
                 Napi::Function::New(env, createKeyboardHook));
 
+    exports.Set(Napi::String::New(env, "resumeKeyboardEvents"),
+                Napi::Function::New(env, resumeKeyboardEvents));
+
     return exports;
 }
- 

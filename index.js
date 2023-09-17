@@ -1,10 +1,10 @@
 "use strict";
 
 const { EventEmitter } = require("events");
-const mouseAddon = require("bindings")("mouse-hook");
-const keyboardAddon = require("bindings")("keyboard-hook");
+const addon = require("bindings")("global_mkh");
 
-let paused = true;
+let mousePaused = true;
+let keyboardPaused = true;
 
 class GlobalMKH extends EventEmitter {
     constructor() {
@@ -23,13 +23,13 @@ class GlobalMKH extends EventEmitter {
 
             // Enable WM_MOUSEMOVE capture if requested
             if (event === "mousemove") {
-                mouseAddon.enableMouseMove();
+                addon.enableMouseMove();
             }
 
             if ((event === "mouseup" || event === "mousedown" || event === "mousemove" || event === "mousewheel") && !createdMouseListener) {
                 // Careful: this currently "leaks" a thread every time it's called.
                 // We should probably get around to fixing that.
-                createdMouseListener = mouseAddon.createMouseHook((event, x, y, button, delta) => {
+                createdMouseListener = addon.createMouseHook((event, x, y, button, delta) => {
                     const payload = { x, y };
                     if (event === "mousewheel") {
                         payload.delta = FromInt32(delta) / 120;
@@ -45,11 +45,11 @@ class GlobalMKH extends EventEmitter {
             } else if ((event === "keyup" || event === "keydown") && !createdKeyboardListener) {
                 // Careful: this currently "leaks" a thread every time it's called.
                 // We should probably get around to fixing that.
-                createdKeyboardListener = keyboardAddon.createKeyboardHook((event, keyName) => {
+                createdKeyboardListener = addon.createKeyboardHook((event, keyName) => {
                     const payload = { keyName };
                     this.emit(event, payload);
                 });
-                if (createdMouseListener) {
+                if (createdKeyboardListener) { 
                     this.resumeKeyboardEvents();
                 }
             }
@@ -66,25 +66,31 @@ class GlobalMKH extends EventEmitter {
 
             registeredEvents = registeredEvents.filter(x => x !== event);
             if (event === "mousemove") {
-                mouseAddon.disableMouseMove();
+                addon.disableMouseMove();
             }
         });
     }
 
-    getPaused() {
-        return paused;
+    getMousePaused() {
+        return mousePaused;
     }
 
     pauseMouseEvents() {
-        if (paused) return false;
-        paused = true;
-        return mouseAddon.pauseMouseEvents();
+        if (mousePaused) return false;
+        mousePaused = true;
+        return addon.pauseMouseEvents();
     }
 
     resumeMouseEvents() {
-        if (!paused) return false;
-        paused = false;
-        return mouseAddon.resumeMouseEvents();
+        if (!mousePaused) return false;
+        mousePaused = false;
+        return addon.resumeMouseEvents();
+    }
+
+    resumeKeyboardEvents() {
+        if (!keyboardPaused) return false;
+        keyboardPaused = false;
+        return addon.resumeKeyboardEvents();
     }
 }
 
