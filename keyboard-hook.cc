@@ -23,7 +23,11 @@ public:
     int nCode;
     WPARAM wParam;
     std::string eventName;
-    std::string keyName;
+    std::string keyName; 
+    bool shiftKey;
+    bool ctrlKey;
+    bool altKey;
+    bool metaKey;
 };
 
 void init()
@@ -40,8 +44,36 @@ void init()
         {VK_UP, "Up"},
         {VK_DOWN, "Down"},
         {VK_SNAPSHOT, "PrintScreen"},
+        {VK_CAPITAL, "CapsLock"},
         {VK_SCROLL, "ScrollLock"},
-        {VK_CONTROL, "Control"}};
+        {VK_CONTROL, "Control"},
+        {VK_LCONTROL, "Control"},
+        {VK_RCONTROL, "Control"},
+        {VK_MENU, "Alt"},
+        {VK_LMENU, "Alt"},
+        {VK_RMENU, "Alt"},
+        {VK_SHIFT, "Shift"},
+        {VK_LSHIFT, "Shift"},
+        {VK_RSHIFT, "Shift"}
+        };
+}
+
+bool isModifier(int vkCode)
+{
+    if (vkCode == VK_CONTROL &&
+        vkCode == VK_LCONTROL &&
+        vkCode == VK_RCONTROL &&
+        vkCode == VK_SHIFT &&
+        vkCode == VK_LSHIFT &&
+        vkCode == VK_RSHIFT &&
+        vkCode == VK_MENU &&
+        vkCode == VK_LMENU &&
+        vkCode == VK_RMENU)
+    {
+        return true;
+    }
+
+    return true;
 }
 
 std::string GetKeyName(KBDLLHOOKSTRUCT *keyboardHook)
@@ -50,34 +82,32 @@ std::string GetKeyName(KBDLLHOOKSTRUCT *keyboardHook)
     {
         init();
     }
-
-    std::string modifiers = "";
-    modifiers += (GetAsyncKeyState(VK_SHIFT) & 0x8000) ? std::string("Shift") : "";
-    modifiers += (GetAsyncKeyState(VK_CONTROL) & 0x8000) ? (!modifiers.empty() ? "+" : "") + std::string("Control") : "";
-    modifiers += (GetAsyncKeyState(VK_MENU) & 0x8000) ? (!modifiers.empty() ? "+" : "") + std::string("Alt") : "";
-    modifiers += !modifiers.empty() ? "+" : "";
-
+ 
     auto it = keyNames.find(keyboardHook->vkCode);
     if (it != keyNames.end())
     {
-        return modifiers + it->second;
+        return it->second;
     }
 
     char buffer[256];
     if (GetKeyNameTextA(keyboardHook->scanCode << 16, buffer, sizeof(buffer)))
     {
-        return modifiers + buffer;
+        return buffer;
     }
 
     return "";
 }
 
 void onKeyboardMainThread(Napi::Env env, Napi::Function function, KeyboardEventContext *pKeyboardEvent)
-{ 
+{
     auto nCode = pKeyboardEvent->nCode;
     auto wParam = pKeyboardEvent->wParam;
     auto eventName = pKeyboardEvent->eventName;
-    auto pKeyName = pKeyboardEvent->keyName;
+    auto pKeyName = pKeyboardEvent->keyName; 
+    auto pAltKey = pKeyboardEvent->altKey;
+    auto pCtrlKey = pKeyboardEvent->ctrlKey;
+    auto pShiftKey = pKeyboardEvent->shiftKey;
+    auto pMetaKey = pKeyboardEvent->metaKey;
 
     delete pKeyboardEvent;
 
@@ -86,7 +116,12 @@ void onKeyboardMainThread(Napi::Env env, Napi::Function function, KeyboardEventC
         Napi::HandleScope scope(env);
 
         // Yell back to NodeJS
-        function.Call(env.Global(), {Napi::String::New(env, eventName), Napi::String::New(env, pKeyName)});
+        function.Call(env.Global(), {Napi::String::New(env, eventName),
+                                     Napi::String::New(env, pKeyName), 
+                                     Napi::Boolean::New(env, pShiftKey),
+                                     Napi::Boolean::New(env, pCtrlKey),
+                                     Napi::Boolean::New(env, pAltKey),
+                                     Napi::Boolean::New(env, pMetaKey)});
     }
 }
 
@@ -96,39 +131,32 @@ LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
     {
         KBDLLHOOKSTRUCT *keyboardHook = (KBDLLHOOKSTRUCT *)lParam;
 
-        if (keyboardHook->vkCode != VK_CONTROL &&
-            keyboardHook->vkCode != VK_SHIFT &&
-            keyboardHook->vkCode != VK_MENU &&
-            keyboardHook->vkCode != VK_LSHIFT &&
-            keyboardHook->vkCode != VK_RSHIFT &&
-            keyboardHook->vkCode != VK_LCONTROL &&
-            keyboardHook->vkCode != VK_RCONTROL &&
-            keyboardHook->vkCode != VK_LMENU &&
-            keyboardHook->vkCode != VK_RMENU)
+        std::string eventName = "";
+        if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
         {
-            std::string eventName = "";
-            if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
-            {
-                eventName = "keydown";
-            }
-            else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
-            {
-                eventName = "keyup";
-            }
+            eventName = "keydown";
+        }
+        else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+        {
+            eventName = "keyup";
+        }
 
-            std::string keyName = GetKeyName(keyboardHook);
+        std::string keyName = GetKeyName(keyboardHook);
 
-            if (!keyName.empty() && !eventName.empty())
-            {
-                auto pKeyboardEvent = new KeyboardEventContext();
-                pKeyboardEvent->nCode = nCode;
-                pKeyboardEvent->wParam = wParam;
-                pKeyboardEvent->eventName = eventName;
-                pKeyboardEvent->keyName = keyName;
+        if (!keyName.empty() && !eventName.empty())
+        {
+            auto pKeyboardEvent = new KeyboardEventContext();
+            pKeyboardEvent->nCode = nCode;
+            pKeyboardEvent->wParam = wParam;
+            pKeyboardEvent->eventName = eventName;
+            pKeyboardEvent->keyName = keyName; 
+            pKeyboardEvent->altKey = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0 || (GetAsyncKeyState(VK_LMENU) & 0x8000) != 0 || (GetAsyncKeyState(VK_RMENU) & 0x8000) != 0;
+            pKeyboardEvent->shiftKey = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0 || (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0  || (GetAsyncKeyState(VK_RSHIFT) & 0x8000) != 0;
+            pKeyboardEvent->ctrlKey = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 || (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 || (GetAsyncKeyState(VK_RCONTROL) & 0x8000) != 0;
+            pKeyboardEvent->metaKey = (GetAsyncKeyState(VK_LWIN) & 0x8000) || (GetAsyncKeyState(VK_RWIN) & 0x8000);
 
-                // Process event on non-blocking thread
-                _tsfnKeyboard.NonBlockingCall(pKeyboardEvent, onKeyboardMainThread);
-            }
+            // Process event on non-blocking thread
+            _tsfnKeyboard.NonBlockingCall(pKeyboardEvent, onKeyboardMainThread);
         }
     }
     // Let Windows continue with this event as normal

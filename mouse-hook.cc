@@ -14,16 +14,18 @@ std::atomic_bool captureMouseMove = false;
 std::atomic_bool installEventHook = false;
 DWORD dwThreadID = 0;
 
-struct MouseEventContext {
-    public:
-        int nCode;
-        WPARAM wParam;
-        LONG ptX;
-        LONG ptY;
-        DWORD mouseData;
+struct MouseEventContext
+{
+public:
+    int nCode;
+    WPARAM wParam;
+    LONG ptX;
+    LONG ptY;
+    DWORD mouseData;
 };
 
-void onMainThread(Napi::Env env, Napi::Function function, MouseEventContext *pMouseEvent) {
+void onMainThread(Napi::Env env, Napi::Function function, MouseEventContext *pMouseEvent)
+{
     auto nCode = pMouseEvent->nCode;
     auto wParam = pMouseEvent->wParam;
     auto ptX = pMouseEvent->ptX;
@@ -32,44 +34,76 @@ void onMainThread(Napi::Env env, Napi::Function function, MouseEventContext *pMo
 
     delete pMouseEvent;
 
-    if (nCode >= 0) {
+    if (nCode >= 0)
+    {
         auto name = "";
         auto button = -1;
 
         // Isolate mouse movement, as it's more CPU intensive
-        if (wParam == WM_MOUSEMOVE) {
+        if (wParam == WM_MOUSEMOVE)
+        {
             // Is mouse movement
-            if(captureMouseMove.load()) {
+            if (captureMouseMove.load())
+            {
                 name = "mousemove";
             }
-        } else {
+        }
+        else
+        {
             // Is not mouse movement
 
             // Determine event type
-            if (wParam == WM_LBUTTONUP || wParam == WM_RBUTTONUP || wParam == WM_MBUTTONUP || WM_XBUTTONUP) {
+            if (wParam == WM_LBUTTONUP || wParam == WM_RBUTTONUP || wParam == WM_MBUTTONUP || WM_XBUTTONUP)
+            {
                 name = "mouseup";
-            } else if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN || WM_XBUTTONDOWN ) {
+            }
+            else if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN || WM_XBUTTONDOWN)
+            {
                 name = "mousedown";
-            } else if (wParam == WM_MOUSEWHEEL || wParam == WM_MOUSEHWHEEL) {
+            }
+            else if (wParam == WM_MOUSEWHEEL || wParam == WM_MOUSEHWHEEL)
+            {
                 name = "mousewheel";
             }
 
             // Determine button
-            if (wParam == WM_LBUTTONUP || wParam == WM_LBUTTONDOWN) {
+            if (wParam == WM_LBUTTONUP || wParam == WM_LBUTTONDOWN)
+            {
                 button = 1;
-            } else if (wParam == WM_RBUTTONUP || wParam == WM_RBUTTONDOWN) {
+            }
+            else if (wParam == WM_RBUTTONUP || wParam == WM_RBUTTONDOWN)
+            {
                 button = 2;
-            } else if (wParam == WM_MBUTTONUP || wParam == WM_MBUTTONDOWN) {
+            }
+            else if (wParam == WM_MBUTTONUP || wParam == WM_MBUTTONDOWN)
+            {
                 button = 3;
-            } else if (wParam == WM_MOUSEWHEEL) {
+            }
+            else if (wParam == WM_XBUTTONUP || wParam == WM_XBUTTONDOWN || wParam == WM_XBUTTONDBLCLK)
+            {
+                button = 4;
+            }
+            else if (GET_XBUTTON_WPARAM(nMouseData) == XBUTTON1)
+            {
+                button = 5;
+            }
+            else if (GET_XBUTTON_WPARAM(nMouseData) == XBUTTON2)
+            {
+                button = 6;
+            }
+            else if (wParam == WM_MOUSEWHEEL)
+            {
                 button = 0;
-            } else if (wParam == WM_MOUSEHWHEEL) {
+            }
+            else if (wParam == WM_MOUSEHWHEEL)
+            {
                 button = 1;
             }
         }
 
         // Only proceed if an event was identified
-        if (name != "") {
+        if (name != "")
+        {
             Napi::HandleScope scope(env);
 
             auto x = Napi::Number::New(env, ptX);
@@ -79,16 +113,18 @@ void onMainThread(Napi::Env env, Napi::Function function, MouseEventContext *pMo
 
             // Yell back to NodeJS
             function.Call(env.Global(),
-                    {Napi::String::New(env, name), x, y,
-                     Napi::Number::New(env, button), mouseData});
+                          {Napi::String::New(env, name), x, y,
+                           Napi::Number::New(env, button), mouseData});
         }
     }
 }
 
-LRESULT CALLBACK MouseHookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK MouseHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
+{
 
     // If not WM_MOUSEMOVE or WM_MOUSEMOVE has been requested, process event
-    if(!(wParam == WM_MOUSEMOVE && !captureMouseMove.load())) {
+    if (!(wParam == WM_MOUSEMOVE && !captureMouseMove.load()))
+    {
         // Prepare data to be processed
         MSLLHOOKSTRUCT *data = (MSLLHOOKSTRUCT *)lParam;
         auto pMouseEvent = new MouseEventContext();
@@ -106,18 +142,26 @@ LRESULT CALLBACK MouseHookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
-DWORD WINAPI MouseHookThread(LPVOID lpParam) {
+DWORD WINAPI MouseHookThread(LPVOID lpParam)
+{
     MSG msg;
     HHOOK hook = installEventHook.load() ? SetWindowsHookEx(WH_MOUSE_LL, MouseHookCallback, NULL, 0) : NULL;
 
-    while (GetMessage(&msg, NULL, 0, 0) > 0) {
-        if (msg.message != WM_USER) continue;
-        if (!installEventHook.load() && hook != NULL) {
-            if (!UnhookWindowsHookEx(hook)) break;
+    while (GetMessage(&msg, NULL, 0, 0) > 0)
+    {
+        if (msg.message != WM_USER)
+            continue;
+        if (!installEventHook.load() && hook != NULL)
+        {
+            if (!UnhookWindowsHookEx(hook))
+                break;
             hook = NULL;
-        } else if (installEventHook.load() && hook == NULL) {
+        }
+        else if (installEventHook.load() && hook == NULL)
+        {
             hook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookCallback, NULL, 0);
-            if (hook == NULL) break;
+            if (hook == NULL)
+                break;
         }
     }
 
@@ -125,7 +169,8 @@ DWORD WINAPI MouseHookThread(LPVOID lpParam) {
     return GetLastError();
 }
 
-Napi::Boolean createMouseHook(const Napi::CallbackInfo &info) {
+Napi::Boolean createMouseHook(const Napi::CallbackInfo &info)
+{
     _hThread = CreateThread(NULL, 0, MouseHookThread, NULL, CREATE_SUSPENDED, &dwThreadID);
     _tsfn = Napi::ThreadSafeFunction::New(
         info.Env(),
@@ -133,40 +178,47 @@ Napi::Boolean createMouseHook(const Napi::CallbackInfo &info) {
         "WH_MOUSE_LL Hook Thread",
         512,
         1,
-        [] ( Napi::Env ) { CloseHandle(_hThread); }
-    );
+        [](Napi::Env)
+        { CloseHandle(_hThread); });
 
     ResumeThread(_hThread);
     return Napi::Boolean::New(info.Env(), true);
 }
 
-void enableMouseMove(const Napi::CallbackInfo &info) {
+void enableMouseMove(const Napi::CallbackInfo &info)
+{
     captureMouseMove = true;
 }
 
-void disableMouseMove(const Napi::CallbackInfo &info) {
+void disableMouseMove(const Napi::CallbackInfo &info)
+{
     captureMouseMove = false;
 }
 
-Napi::Boolean pauseMouseEvents(const Napi::CallbackInfo &info) {
+Napi::Boolean pauseMouseEvents(const Napi::CallbackInfo &info)
+{
     BOOL bDidPost = FALSE;
-    if (dwThreadID != 0) {
+    if (dwThreadID != 0)
+    {
         installEventHook = false;
         bDidPost = PostThreadMessageW(dwThreadID, WM_USER, NULL, NULL);
     }
     return Napi::Boolean::New(info.Env(), bDidPost);
 }
 
-Napi::Boolean resumeMouseEvents(const Napi::CallbackInfo &info) {
+Napi::Boolean resumeMouseEvents(const Napi::CallbackInfo &info)
+{
     BOOL bDidPost = FALSE;
-    if (dwThreadID != 0) {
+    if (dwThreadID != 0)
+    {
         installEventHook = true;
         bDidPost = PostThreadMessageW(dwThreadID, WM_USER, NULL, NULL);
     }
     return Napi::Boolean::New(info.Env(), bDidPost);
 }
 
-Napi::Object InitMouse(Napi::Env env, Napi::Object exports) {
+Napi::Object InitMouse(Napi::Env env, Napi::Object exports)
+{
     exports.Set(Napi::String::New(env, "createMouseHook"),
                 Napi::Function::New(env, createMouseHook));
 
@@ -184,4 +236,3 @@ Napi::Object InitMouse(Napi::Env env, Napi::Object exports) {
 
     return exports;
 }
- 

@@ -51,7 +51,7 @@ globalMKH.on("mouseup", data => {
 });
 
 globalMKH.on("mousemove", data => {
-  console.log(data);
+ // console.log(data);
 });
 
 globalMKH.on("mousedown", data => {

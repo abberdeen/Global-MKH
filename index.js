@@ -45,11 +45,19 @@ class GlobalMKH extends EventEmitter {
             } else if ((event === "keyup" || event === "keydown") && !createdKeyboardListener) {
                 // Careful: this currently "leaks" a thread every time it's called.
                 // We should probably get around to fixing that.
-                createdKeyboardListener = addon.createKeyboardHook((event, keyName) => {
-                    const payload = { keyName };
+                createdKeyboardListener = addon.createKeyboardHook((event, keyName, shiftKey, ctrlKey, altKey, metaKey) => {
+                    var keys = []; 
+                    if (keyName !== 'Shift' && keyName !== 'Control' && keyName !== 'Alt') {
+                        if (shiftKey) keys.push('Shift');
+                        if (ctrlKey) keys.push('Control');
+                        if (altKey) keys.push('Alt');
+                    }
+                    var combination = keys.concat(keyName).join('+');
+
+                    const payload = { keyName, combination, shiftKey, ctrlKey, altKey, metaKey };
                     this.emit(event, payload);
                 });
-                if (createdKeyboardListener) { 
+                if (createdKeyboardListener) {
                     this.resumeKeyboardEvents();
                 }
             }
