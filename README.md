@@ -15,7 +15,12 @@ Import the module and register for the mouse events you'd like to listen to.
 
 **`keyup`** / **`keydown`** — *Fires when a keyboard button is pressed / released.*\
 Returns:
-- **keyName:** Return the pressed key, along with the modifiers (control, shift, and alt), separated by a '+'. 
+- **keyName:** Return the pressed single key name.
+- **combination**  Return pressed key in the end along with the modifiers if they are (control, shift, and alt), separated by a '+'. 
+- **shiftKey** Boolean is pressed Shift key.
+- **ctrlKey** Boolean is pressed Control key.
+- **altKey** Boolean is pressed Alt key.
+- **metaKey** Boolean is pressed Meta (Win) key.
 
 **`mouseup`** / **`mousedown`** — *Fires when a mouse button is pressed / released.*\
 Returns:

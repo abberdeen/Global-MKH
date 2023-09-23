@@ -125,6 +125,10 @@ void onKeyboardMainThread(Napi::Env env, Napi::Function function, KeyboardEventC
     }
 }
 
+bool IsKeyPressed(int virtualKeyCode) {
+    return (GetAsyncKeyState(virtualKeyCode) & 0x8000) != 0;
+}
+
 LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
 {
     if (nCode == HC_ACTION)
@@ -149,11 +153,11 @@ LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
             pKeyboardEvent->nCode = nCode;
             pKeyboardEvent->wParam = wParam;
             pKeyboardEvent->eventName = eventName;
-            pKeyboardEvent->keyName = keyName; 
-            pKeyboardEvent->altKey = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0 || (GetAsyncKeyState(VK_LMENU) & 0x8000) != 0 || (GetAsyncKeyState(VK_RMENU) & 0x8000) != 0;
-            pKeyboardEvent->shiftKey = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0 || (GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0  || (GetAsyncKeyState(VK_RSHIFT) & 0x8000) != 0;
-            pKeyboardEvent->ctrlKey = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 || (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 || (GetAsyncKeyState(VK_RCONTROL) & 0x8000) != 0;
-            pKeyboardEvent->metaKey = (GetAsyncKeyState(VK_LWIN) & 0x8000) || (GetAsyncKeyState(VK_RWIN) & 0x8000);
+            pKeyboardEvent->keyName = keyName;
+            pKeyboardEvent->altKey = (IsKeyPressed(VK_MENU) || IsKeyPressed(VK_LMENU) || IsKeyPressed(VK_RMENU));
+            pKeyboardEvent->shiftKey = (IsKeyPressed(VK_SHIFT) || IsKeyPressed(VK_LSHIFT) || IsKeyPressed(VK_RSHIFT));
+            pKeyboardEvent->ctrlKey = (IsKeyPressed(VK_CONTROL) || IsKeyPressed(VK_LCONTROL) || IsKeyPressed(VK_RCONTROL));
+            pKeyboardEvent->metaKey = (IsKeyPressed(VK_LWIN) || GetAsyncKeyState(VK_RWIN));
 
             // Process event on non-blocking thread
             _tsfnKeyboard.NonBlockingCall(pKeyboardEvent, onKeyboardMainThread);
