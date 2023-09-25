@@ -28,6 +28,7 @@ public:
     bool ctrlKey;
     bool altKey;
     bool metaKey;
+    std::string unorderedCombination;
 };
 
 void init()
@@ -123,7 +124,7 @@ void onKeyboardMainThread(Napi::Env env, Napi::Function function, KeyboardEventC
                                      Napi::Boolean::New(env, pCtrlKey),
                                      Napi::Boolean::New(env, pAltKey),
                                      Napi::Boolean::New(env, pMetaKey),
-                                     Napi::Boolean::New(env, pCrazyCombination)
+                                     Napi::String::New(env, pCrazyCombination)
                                      });
     }
 }
@@ -142,14 +143,26 @@ LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
         
         std::string keyName = GetKeyName(keyboardHook);
         std::string eventName = "";
-
+std::string crazyComb = "";
         if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
         {
             eventName = "keydown"; 
+             unorderedCombination += keyName;
+            unorderedCombination += "+";
         }
         else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
         {
-            eventName = "keyup"; 
+            eventName = "keyup";
+
+            if (!unorderedCombination.empty() && unorderedCombination.back() == '+')
+            {
+                unorderedCombination.pop_back();
+            }
+
+            crazyComb = unorderedCombination;
+
+            // Clear previous combinations
+            unorderedCombination.clear();
         }
 
         if (!keyName.empty() && !eventName.empty())
@@ -163,7 +176,12 @@ LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
             pKeyboardEvent->shiftKey = (IsKeyPressed(VK_SHIFT) || IsKeyPressed(VK_LSHIFT) || IsKeyPressed(VK_RSHIFT));
             pKeyboardEvent->ctrlKey = (IsKeyPressed(VK_CONTROL) || IsKeyPressed(VK_LCONTROL) || IsKeyPressed(VK_RCONTROL));
             pKeyboardEvent->metaKey = (IsKeyPressed(VK_LWIN) || GetAsyncKeyState(VK_RWIN));
-            pKeyboardEvent->unorderedCombination = unorderedCombination;
+ 
+            if( unorderedCombination.length() > 64){
+                unorderedCombination = "";
+            }
+            
+            pKeyboardEvent->unorderedCombination = crazyComb;
 
             // Process event on non-blocking thread
             _tsfnKeyboard.NonBlockingCall(pKeyboardEvent, onKeyboardMainThread);
@@ -171,13 +189,11 @@ LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
 
          if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
         { 
-            unorderedCombination += keyName;
-            unorderedCombination += "+";
+           
         }
         else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
         { 
-            // Clear previous combinations
-            unorderedCombination.clear();
+          
         }
     }
 
