@@ -172,15 +172,15 @@ std::string crazyComb = "";
             pKeyboardEvent->wParam = wParam;
             pKeyboardEvent->eventName = eventName;
             pKeyboardEvent->keyName = keyName;
-            pKeyboardEvent->altKey = (IsKeyPressed(VK_MENU) || IsKeyPressed(VK_LMENU) || IsKeyPressed(VK_RMENU));
-            pKeyboardEvent->shiftKey = (IsKeyPressed(VK_SHIFT) || IsKeyPressed(VK_LSHIFT) || IsKeyPressed(VK_RSHIFT));
-            pKeyboardEvent->ctrlKey = (IsKeyPressed(VK_CONTROL) || IsKeyPressed(VK_LCONTROL) || IsKeyPressed(VK_RCONTROL));
+            pKeyboardEvent->altKey = (IsKeyPressed(VK_MENU) || IsKeyPressed(VK_LMENU) || IsKeyPressed(VK_RMENU) || keyName == "Alt");
+            pKeyboardEvent->shiftKey = (IsKeyPressed(VK_SHIFT) || IsKeyPressed(VK_LSHIFT) || IsKeyPressed(VK_RSHIFT) || keyName == "Shift");
+            pKeyboardEvent->ctrlKey = (IsKeyPressed(VK_CONTROL) || IsKeyPressed(VK_LCONTROL) || IsKeyPressed(VK_RCONTROL) || keyName == "Ctrl");
             pKeyboardEvent->metaKey = (IsKeyPressed(VK_LWIN) || GetAsyncKeyState(VK_RWIN));
  
             if( unorderedCombination.length() > 64){
                 unorderedCombination = "";
             }
-            
+
             pKeyboardEvent->unorderedCombination = crazyComb;
 
             // Process event on non-blocking thread
