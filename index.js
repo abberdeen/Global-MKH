@@ -5,7 +5,7 @@ const addon = require("bindings")("global_mkh");
 
 let mousePaused = true;
 let keyboardPaused = true;
-let modifiers = ['Shift', 'Control', 'Alt'];
+let modifiers = ['Shift', 'Ctrl', 'Alt'];
 class GlobalMKH extends EventEmitter {
     constructor() {
         super();
@@ -45,11 +45,11 @@ class GlobalMKH extends EventEmitter {
             } else if ((event === "keyup" || event === "keydown") && !createdKeyboardListener) {
                 // Careful: this currently "leaks" a thread every time it's called.
                 // We should probably get around to fixing that.
-                createdKeyboardListener = addon.createKeyboardHook((event, keyName, shiftKey, ctrlKey, altKey, metaKey) => {
+                createdKeyboardListener = addon.createKeyboardHook((event, keyName, shiftKey, ctrlKey, altKey, metaKey, crazyCombination) => {
                     var keys = [];
 
                     if (shiftKey || (keyName === 'Shift' && !shiftKey)) keys.push('Shift');
-                    if (ctrlKey || (keyName === 'Control' && !ctrlKey)) keys.push('Control');
+                    if (ctrlKey || (keyName === 'Ctrl' && !ctrlKey)) keys.push('Ctrl');
                     if (altKey || (keyName === 'Alt' && !altKey)) keys.push('Alt');
 
                     if (!modifiers.includes(keyName)) {
@@ -58,7 +58,7 @@ class GlobalMKH extends EventEmitter {
 
                     var combination = keys.join('+');
 
-                    const payload = { keyName, combination, shiftKey, ctrlKey, altKey, metaKey };
+                    const payload = { keyName, combination, shiftKey, ctrlKey, altKey, metaKey, crazyCombination };
                     this.emit(event, payload);
                 });
                 if (createdKeyboardListener) {

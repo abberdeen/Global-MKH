@@ -46,9 +46,9 @@ void init()
         {VK_SNAPSHOT, "PrintScreen"},
         {VK_CAPITAL, "CapsLock"},
         {VK_SCROLL, "ScrollLock"},
-        {VK_CONTROL, "Control"},
-        {VK_LCONTROL, "Control"},
-        {VK_RCONTROL, "Control"},
+        {VK_CONTROL, "Ctrl"},
+        {VK_LCONTROL, "Ctrl"},
+        {VK_RCONTROL, "Ctrl"},
         {VK_MENU, "Alt"},
         {VK_LMENU, "Alt"},
         {VK_RMENU, "Alt"},
@@ -108,6 +108,7 @@ void onKeyboardMainThread(Napi::Env env, Napi::Function function, KeyboardEventC
     auto pCtrlKey = pKeyboardEvent->ctrlKey;
     auto pShiftKey = pKeyboardEvent->shiftKey;
     auto pMetaKey = pKeyboardEvent->metaKey;
+    auto pCrazyCombination = pKeyboardEvent->unorderedCombination;
 
     delete pKeyboardEvent;
 
@@ -121,7 +122,9 @@ void onKeyboardMainThread(Napi::Env env, Napi::Function function, KeyboardEventC
                                      Napi::Boolean::New(env, pShiftKey),
                                      Napi::Boolean::New(env, pCtrlKey),
                                      Napi::Boolean::New(env, pAltKey),
-                                     Napi::Boolean::New(env, pMetaKey)});
+                                     Napi::Boolean::New(env, pMetaKey),
+                                     Napi::Boolean::New(env, pCrazyCombination)
+                                     });
     }
 }
 
@@ -129,23 +132,25 @@ bool IsKeyPressed(int virtualKeyCode) {
     return (GetAsyncKeyState(virtualKeyCode) & 0x8000) != 0;
 }
 
+static std::string unorderedCombination;
+
 LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
 {
     if (nCode == HC_ACTION)
     {
         KBDLLHOOKSTRUCT *keyboardHook = (KBDLLHOOKSTRUCT *)lParam;
-
+        
+        std::string keyName = GetKeyName(keyboardHook);
         std::string eventName = "";
+
         if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
         {
-            eventName = "keydown";
+            eventName = "keydown"; 
         }
         else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
         {
-            eventName = "keyup";
+            eventName = "keyup"; 
         }
-
-        std::string keyName = GetKeyName(keyboardHook);
 
         if (!keyName.empty() && !eventName.empty())
         {
@@ -158,11 +163,24 @@ LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
             pKeyboardEvent->shiftKey = (IsKeyPressed(VK_SHIFT) || IsKeyPressed(VK_LSHIFT) || IsKeyPressed(VK_RSHIFT));
             pKeyboardEvent->ctrlKey = (IsKeyPressed(VK_CONTROL) || IsKeyPressed(VK_LCONTROL) || IsKeyPressed(VK_RCONTROL));
             pKeyboardEvent->metaKey = (IsKeyPressed(VK_LWIN) || GetAsyncKeyState(VK_RWIN));
+            pKeyboardEvent->unorderedCombination = unorderedCombination;
 
             // Process event on non-blocking thread
             _tsfnKeyboard.NonBlockingCall(pKeyboardEvent, onKeyboardMainThread);
         }
+
+         if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
+        { 
+            unorderedCombination += keyName;
+            unorderedCombination += "+";
+        }
+        else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+        { 
+            // Clear previous combinations
+            unorderedCombination.clear();
+        }
     }
+
     // Let Windows continue with this event as normal
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
