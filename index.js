@@ -58,7 +58,10 @@ class GlobalMKH extends EventEmitter {
 
                     var combination = keys.join('+');
 
-                    const payload = { keyName, combination, shiftKey, ctrlKey, altKey, metaKey, crazyCombination };
+                    const payload = { keyName, combination, shiftKey, ctrlKey, altKey, metaKey };
+                    if (event === "keyup") {
+                        payload.crazyCombination = crazyCombination;
+                    }
                     this.emit(event, payload);
                 });
                 if (createdKeyboardListener) {

@@ -23,7 +23,7 @@ public:
     int nCode;
     WPARAM wParam;
     std::string eventName;
-    std::string keyName; 
+    std::string keyName;
     bool shiftKey;
     bool ctrlKey;
     bool altKey;
@@ -55,8 +55,7 @@ void init()
         {VK_RMENU, "Alt"},
         {VK_SHIFT, "Shift"},
         {VK_LSHIFT, "Shift"},
-        {VK_RSHIFT, "Shift"}
-        };
+        {VK_RSHIFT, "Shift"}};
 }
 
 bool isModifier(int vkCode)
@@ -83,7 +82,7 @@ std::string GetKeyName(KBDLLHOOKSTRUCT *keyboardHook)
     {
         init();
     }
- 
+
     auto it = keyNames.find(keyboardHook->vkCode);
     if (it != keyNames.end())
     {
@@ -104,7 +103,7 @@ void onKeyboardMainThread(Napi::Env env, Napi::Function function, KeyboardEventC
     auto nCode = pKeyboardEvent->nCode;
     auto wParam = pKeyboardEvent->wParam;
     auto eventName = pKeyboardEvent->eventName;
-    auto pKeyName = pKeyboardEvent->keyName; 
+    auto pKeyName = pKeyboardEvent->keyName;
     auto pAltKey = pKeyboardEvent->altKey;
     auto pCtrlKey = pKeyboardEvent->ctrlKey;
     auto pShiftKey = pKeyboardEvent->shiftKey;
@@ -118,18 +117,25 @@ void onKeyboardMainThread(Napi::Env env, Napi::Function function, KeyboardEventC
         Napi::HandleScope scope(env);
 
         // Yell back to NodeJS
-        function.Call(env.Global(), {Napi::String::New(env, eventName),
-                                     Napi::String::New(env, pKeyName), 
-                                     Napi::Boolean::New(env, pShiftKey),
-                                     Napi::Boolean::New(env, pCtrlKey),
-                                     Napi::Boolean::New(env, pAltKey),
-                                     Napi::Boolean::New(env, pMetaKey),
-                                     Napi::String::New(env, pCrazyCombination)
-                                     });
+        std::vector<napi_value> args = {
+            Napi::String::New(env, eventName),
+            Napi::String::New(env, pKeyName),
+            Napi::Boolean::New(env, pShiftKey),
+            Napi::Boolean::New(env, pCtrlKey),
+            Napi::Boolean::New(env, pAltKey),
+            Napi::Boolean::New(env, pMetaKey),
+        };
+
+        if (eventName == "keyup")
+        {
+            args.push_back(Napi::String::New(env, pCrazyCombination));
+        }
+        function.Call(env.Global(), args);
     }
 }
 
-bool IsKeyPressed(int virtualKeyCode) {
+bool IsKeyPressed(int virtualKeyCode)
+{
     return (GetAsyncKeyState(virtualKeyCode) & 0x8000) != 0;
 }
 
@@ -140,14 +146,14 @@ LRESULT CALLBACK KeyboardHookCallback(int nCode, WPARAM wParam, LPARAM lParam)
     if (nCode == HC_ACTION)
     {
         KBDLLHOOKSTRUCT *keyboardHook = (KBDLLHOOKSTRUCT *)lParam;
-        
+
         std::string keyName = GetKeyName(keyboardHook);
         std::string eventName = "";
-std::string crazyComb = "";
+        std::string crazyComb = "";
         if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
         {
-            eventName = "keydown"; 
-             unorderedCombination += keyName;
+            eventName = "keydown";
+            unorderedCombination += keyName;
             unorderedCombination += "+";
         }
         else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
@@ -176,8 +182,9 @@ std::string crazyComb = "";
             pKeyboardEvent->shiftKey = (IsKeyPressed(VK_SHIFT) || IsKeyPressed(VK_LSHIFT) || IsKeyPressed(VK_RSHIFT) || keyName == "Shift");
             pKeyboardEvent->ctrlKey = (IsKeyPressed(VK_CONTROL) || IsKeyPressed(VK_LCONTROL) || IsKeyPressed(VK_RCONTROL) || keyName == "Ctrl");
             pKeyboardEvent->metaKey = (IsKeyPressed(VK_LWIN) || GetAsyncKeyState(VK_RWIN));
- 
-            if( unorderedCombination.length() > 64){
+
+            if (unorderedCombination.length() > 64)
+            {
                 unorderedCombination = "";
             }
 
@@ -187,13 +194,11 @@ std::string crazyComb = "";
             _tsfnKeyboard.NonBlockingCall(pKeyboardEvent, onKeyboardMainThread);
         }
 
-         if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
-        { 
-           
+        if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
+        {
         }
         else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
-        { 
-          
+        {
         }
     }
 

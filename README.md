@@ -21,7 +21,7 @@ Returns:
 - **ctrlKey** Boolean is pressed Control key.
 - **altKey** Boolean is pressed Alt key.
 - **metaKey** Boolean is pressed Meta (Win) key. 
-- **crazyCombination** String key combinations, ordered by the order they are pressed.
+- **crazyCombination** Available only on key up. String key combinations, ordered by the order they are pressed.
 
 **`mouseup`** / **`mousedown`** — *Fires when a mouse button is pressed / released.*\
 Returns:

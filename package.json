@@ -1,6 +1,6 @@
 {
   "name": "@abberdeen/global-mkh",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Global keyboard and mouse events listener for Node.js (Windows only)",
   "main": "index.js",
   "scripts": {
